@@ -61,4 +61,5 @@ def main():
         Input = input("SQL RCE: ")
         Setup(Input)
 
-main()
+if __name__ == "__main__":
+    main()
